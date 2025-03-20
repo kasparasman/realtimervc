@@ -96,12 +96,12 @@ if __name__ == "__main__":
 
     i18n = I18nAuto()
 
-    # device = rvc_for_realtime.config.device
-    # device = torch.device(
-    #     "cuda"
-    #     if torch.cuda.is_available()
-    #     else ("mps" if torch.backends.mps.is_available() else "cpu")
-    # )
+    #device = rvc_for_realtime.config.device
+    #device = torch.device(
+    #    "cuda"
+    #    if torch.cuda.is_available()
+    #    else ("mps" if torch.backends.mps.is_available() else "cpu")
+    #)
     current_dir = os.getcwd()
     inp_q = Queue()
     opt_q = Queue()

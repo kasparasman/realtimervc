@@ -175,7 +175,7 @@ class RVC:
             if last_rvc is None or last_rvc.pth_path != self.pth_path:
                 set_synthesizer()
             else:
-                self.tgt_sr = last_rvc.tgt_sr
+                self.tgt_sr = 40000
                 self.if_f0 = last_rvc.if_f0
                 self.version = last_rvc.version
                 self.is_half = last_rvc.is_half
