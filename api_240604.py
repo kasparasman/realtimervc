@@ -253,6 +253,7 @@ class AudioAPI:
             sr=self.gui_config.samplerate, n_fft=4 * self.zc, prop_decrease=0.9
         ).to(self.config.device)
         logger.info("Audio processing parameters and buffers initialized (mic/speaker stream disabled).")
+        self.initialized = True
 
 
     def audio_callback(self, indata: np.ndarray, outdata: np.ndarray, frames, times, status):
@@ -381,9 +382,6 @@ class AudioAPI:
         logger.info(f"Infer time: {total_time:.2f}")
     def process_audio_file(self, input_file: str, output_file: str):
         import soundfile as sf
-        self.init_processing_params()
-        self.init_processing_buffers()
-
         audio_data, sr = sf.read(input_file, dtype='float32')
         # Optionally, if sr doesn't match your desired samplerate, you can resample here.
         output_audio = []
@@ -567,7 +565,8 @@ if __name__ == "__main__":
     from configs.config import Config
     audio_api.config = Config()
     audio_api.initialize_queues()
-    
+    audio_api.start_vc()
+
     # --- NGROK TUNNEL SETUP ---
     # This is needed to expose the server running in Colab to the public internet.
     try:
