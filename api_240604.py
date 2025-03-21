@@ -164,6 +164,12 @@ class AudioAPI:
         self.gui_config.use_pv = values.use_pv
         self.gui_config.f0method = values.f0method
         return True
+    def init_processing_params(self):
+        # If samplerate hasn't been set, assign a default value
+        if not hasattr(self.gui_config, "samplerate") or not self.gui_config.samplerate:
+            self.gui_config.samplerate = 40000  # or another default value
+        self.zc = self.gui_config.samplerate // 100
+        self.block_frame = int(np.round(self.gui_config.block_time * self.gui_config.samplerate / self.zc)) * self.zc
 
     def start_vc(self):
         torch.cuda.empty_cache()
@@ -418,7 +424,7 @@ class AudioAPI:
         logger.info(f"Infer time: {total_time:.2f}")
     def process_audio_file(self, input_file: str, output_file: str):
         import soundfile as sf
-        # Load the entire audio file (assumes float32, mono or multi-channel)
+        self.init_processing_params()
         audio_data, sr = sf.read(input_file, dtype='float32')
         # Optionally, if sr doesn't match your desired samplerate, you can resample here.
         output_audio = []
