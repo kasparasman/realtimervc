@@ -602,4 +602,17 @@ if __name__ == "__main__":
     from configs.config import Config
     audio_api.config = Config()
     audio_api.initialize_queues()
+    
+    # --- NGROK TUNNEL SETUP ---
+    # This is needed to expose the server running in Colab to the public internet.
+    try:
+        from pyngrok import ngrok
+        ngrok.set_auth_token("2p4UJqavDXUmKRkKr7mnVb8k7dj_4mNWQhhwLqxjxmFoTcKNo")
+        public_url = ngrok.connect(6242, "http")
+        logger.info(f"Ngrok tunnel established: {public_url.public_url}")
+        print(f"Access your API at: {public_url.public_url}")
+    except Exception as e:
+        logger.error(f"Ngrok tunnel setup failed: {e}")
+    
+    # --- RUN THE FASTAPI SERVER ---
     uvicorn.run(app, host="0.0.0.0", port=6242)
