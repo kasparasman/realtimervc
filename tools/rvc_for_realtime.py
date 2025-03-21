@@ -119,6 +119,7 @@ class RVC:
             def set_default_model():
                 self.net_g, cpt = get_synthesizer(self.pth_path, self.device)
                 self.tgt_sr = cpt["config"][-1]
+                print()
                 cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]
                 self.if_f0 = cpt.get("f0", 1)
                 self.version = cpt.get("version", "v1")

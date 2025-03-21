@@ -416,6 +416,35 @@ class AudioAPI:
             outdata[:] = infer_wav[: self.block_frame].repeat(2, 1).t().cpu().numpy()
         total_time = time.perf_counter() - start_time
         logger.info(f"Infer time: {total_time:.2f}")
+    def process_audio_file(self, input_file: str, output_file: str):
+        import soundfile as sf
+        # Load the entire audio file (assumes float32, mono or multi-channel)
+        audio_data, sr = sf.read(input_file, dtype='float32')
+        # Optionally, if sr doesn't match your desired samplerate, you can resample here.
+        output_audio = []
+        num_samples = len(audio_data)
+        start = 0
+        while start < num_samples:
+            # Extract a block of samples; pad if necessary
+            block = audio_data[start:start + self.block_frame]
+            if len(block) < self.block_frame:
+                block = np.pad(block, (0, self.block_frame - len(block)), mode='constant')
+            # Ensure block is 2D (shape: [block_frame, channels])
+            if block.ndim == 1:
+                block = block.reshape(-1, 1)
+            # Prepare a dummy outdata buffer with the expected shape
+            if sys.platform == "darwin":
+                outdata = np.zeros((self.block_frame, 1), dtype='float32')
+            else:
+                outdata = np.zeros((self.block_frame, 2), dtype='float32')
+            # Process this block through your audio_callback
+            self.audio_callback(block, outdata, self.block_frame, None, None)
+            output_audio.append(outdata)
+            start += self.block_frame
+        # Concatenate all processed blocks and write to output file
+        output_audio = np.concatenate(output_audio, axis=0)
+        sf.write(output_file, output_audio, self.gui_config.samplerate)
+        return output_file
 
     def get_devices(self, update: bool = True):
         if update:
@@ -515,6 +544,17 @@ def configure_audio(config_data: ConfigData):
     except Exception as e:
         logger.error(f"Configuration failed: {e}")
         raise HTTPException(status_code=400, detail=f"Configuration failed: {e}")
+@app.post("/process_audio")
+def process_audio(payload: dict):
+    input_file = payload.get("input_file")
+    output_file = payload.get("output_file", "output.wav")
+    if not input_file:
+        raise HTTPException(status_code=400, detail="Missing 'input_file' in payload")
+    try:
+        result_file = audio_api.process_audio_file(input_file, output_file)
+        return {"message": "Processing complete", "output_file": result_file}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/start")
 def start_conversion():

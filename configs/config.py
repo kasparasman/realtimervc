@@ -4,7 +4,6 @@ import sys
 import json
 import shutil
 from multiprocessing import cpu_count
-
 import torch
 
 try:
