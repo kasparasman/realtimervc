@@ -210,44 +210,15 @@ class AudioAPI:
             else self.get_device_samplerate()
         )
         self.zc = self.gui_config.samplerate // 100
-        self.block_frame = (
-            int(
-                np.round(
-                    self.gui_config.block_time
-                    * self.gui_config.samplerate
-                    / self.zc
-                )
-            )
-            * self.zc
-        )
-        self.block_frame_16k = 160 * self.block_frame // self.zc
-        self.crossfade_frame = (
-            int(
-                np.round(
-                    self.gui_config.crossfade_time
-                    * self.gui_config.samplerate
-                    / self.zc
-                )
-            )
-            * self.zc
-        )
+        self.block_frame = int(np.round(self.gui_config.block_time * self.gui_config.samplerate / self.zc)) * self.zc
+        self.block_frame_16k = 160 * self.block_frame // self.zc  # <-- Ensure this is set
+        self.crossfade_frame = int(np.round(self.gui_config.crossfade_time * self.gui_config.samplerate / self.zc)) * self.zc
         self.sola_buffer_frame = min(self.crossfade_frame, 4 * self.zc)
         self.sola_search_frame = self.zc
-        self.extra_frame = (
-            int(
-                np.round(
-                    self.gui_config.extra_time
-                    * self.gui_config.samplerate
-                    / self.zc
-                )
-            )
-            * self.zc
-        )
+        self.extra_frame = int(np.round(self.gui_config.extra_time * self.gui_config.samplerate / self.zc)) * self.zc
+
         self.input_wav = torch.zeros(
-            self.extra_frame
-            + self.crossfade_frame
-            + self.sola_search_frame
-            + self.block_frame,
+            self.extra_frame + self.crossfade_frame + self.sola_search_frame + self.block_frame,
             device=self.config.device,
             dtype=torch.float32,
         )
@@ -258,29 +229,12 @@ class AudioAPI:
             dtype=torch.float32,
         )
         self.rms_buffer = np.zeros(4 * self.zc, dtype="float32")
-        self.sola_buffer = torch.zeros(
-            self.sola_buffer_frame, device=self.config.device, dtype=torch.float32
-        )
+        self.sola_buffer = torch.zeros(self.sola_buffer_frame, device=self.config.device, dtype=torch.float32)
         self.nr_buffer = self.sola_buffer.clone()
         self.output_buffer = self.input_wav.clone()
         self.skip_head = self.extra_frame // self.zc
-        self.return_length = (
-            self.block_frame + self.sola_buffer_frame + self.sola_search_frame
-        ) // self.zc
-        self.fade_in_window = (
-            torch.sin(
-                0.5
-                * np.pi
-                * torch.linspace(
-                    0.0,
-                    1.0,
-                    steps=self.sola_buffer_frame,
-                    device=self.config.device,
-                    dtype=torch.float32,
-                )
-            )
-            ** 2
-        )
+        self.return_length = (self.block_frame + self.sola_buffer_frame + self.sola_search_frame) // self.zc
+        self.fade_in_window = torch.sin(0.5 * np.pi * torch.linspace(0, 1, steps=self.sola_buffer_frame, device=self.config.device, dtype=torch.float32)) ** 2
         self.fade_out_window = 1 - self.fade_in_window
         self.resampler = tat.Resample(
             orig_freq=self.gui_config.samplerate,
@@ -298,24 +252,8 @@ class AudioAPI:
         self.tg = TorchGate(
             sr=self.gui_config.samplerate, n_fft=4 * self.zc, prop_decrease=0.9
         ).to(self.config.device)
-        thread_vc = threading.Thread(target=self.soundinput)
-        thread_vc.start()
+        logger.info("Audio processing parameters and buffers initialized (mic/speaker stream disabled).")
 
-    def soundinput(self):
-        channels = 1 if sys.platform == "darwin" else 2
-        with sd.Stream(
-            channels=channels,
-            callback=self.audio_callback,
-            blocksize=self.block_frame,
-            samplerate=self.gui_config.samplerate,
-            dtype="float32",
-        ) as stream:
-            global stream_latency
-            stream_latency = stream.latency[-1]
-            while self.flag_vc:
-                time.sleep(self.gui_config.block_time)
-                logger.info("Audio block passed.")
-        logger.info("Ending VC")
 
     def audio_callback(self, indata: np.ndarray, outdata: np.ndarray, frames, times, status):
         start_time = time.perf_counter()
