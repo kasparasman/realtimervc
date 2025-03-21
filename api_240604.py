@@ -384,7 +384,7 @@ class AudioAPI:
     def process_audio_file(self, input_file: str, output_file: str):
         import soundfile as sf
         audio_data, sr = sf.read(input_file, dtype='float32')
-        # Optionally, if sr doesn't match your desired samplerate, you can resample here.
+        self.gui_config.samplerate = sr  # or self.gui_config.samplerate = 16000 if that's what is expected
         output_audio = []
         num_samples = len(audio_data)
         start = 0
