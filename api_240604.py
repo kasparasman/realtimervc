@@ -500,7 +500,11 @@ def configure_audio(config_data: ConfigData):
             with open("configs/config.json", "w", encoding='utf-8') as j:
                 json.dump(settings, j, ensure_ascii=False)
             logger.info("Configuration set successfully")
-            return {"message": "Configuration set successfully"}
+            # Initialize the processing chain now that configuration is set.
+            if not getattr(audio_api, "initialized", False):
+                audio_api.start_vc()
+                logger.info("Audio processing initialized.")
+            return {"message": "Configuration set and processing initialized successfully"}
     except HTTPException as e:
         logger.error(f"Configuration error: {e.detail}")
         raise
@@ -565,7 +569,6 @@ if __name__ == "__main__":
     from configs.config import Config
     audio_api.config = Config()
     audio_api.initialize_queues()
-    audio_api.start_vc()
 
     # --- NGROK TUNNEL SETUP ---
     # This is needed to expose the server running in Colab to the public internet.
