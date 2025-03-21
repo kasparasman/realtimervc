@@ -146,7 +146,8 @@ class AudioAPI:
             raise HTTPException(status_code=400, detail="Please select a .pth file")
         if not values.index_path.strip():
             raise HTTPException(status_code=400, detail="Please select an index file")
-        self.set_devices(values.sg_input_device, values.sg_output_device)
+        self.gui_config.sg_input_device = "dummy_input"
+        self.gui_config.sg_output_device = "dummy_output"
         self.config.use_jit = False
         self.gui_config.pth_path = values.pth_path
         self.gui_config.index_path = values.index_path
