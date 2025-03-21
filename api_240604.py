@@ -168,7 +168,7 @@ class AudioAPI:
     def init_processing_params(self):
         # If samplerate hasn't been set, assign a default value
         if not hasattr(self.gui_config, "samplerate") or not self.gui_config.samplerate:
-            self.gui_config.samplerate = 40000  # or another default value
+            self.gui_config.samplerate = 16000
         self.zc = self.gui_config.samplerate // 100
         self.block_frame = int(np.round(self.gui_config.block_time * self.gui_config.samplerate / self.zc)) * self.zc
         self.block_frame_16k = 160 * self.block_frame // self.zc
