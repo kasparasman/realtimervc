@@ -16,6 +16,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchcrepe
+from fairseq.data.dictionary import Dictionary
+import torch.serialization
 
 from infer.lib.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
@@ -23,6 +25,7 @@ from infer.lib.infer_pack.models import (
     SynthesizerTrnMs768NSFsid,
     SynthesizerTrnMs768NSFsid_nono,
 )
+torch.serialization.add_safe_globals([Dictionary])
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
