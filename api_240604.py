@@ -170,6 +170,7 @@ class AudioAPI:
             self.gui_config.samplerate = 40000  # or another default value
         self.zc = self.gui_config.samplerate // 100
         self.block_frame = int(np.round(self.gui_config.block_time * self.gui_config.samplerate / self.zc)) * self.zc
+        self.block_frame_16k = 160 * self.block_frame // self.zc
     def init_processing_buffers(self):
         # Ensure processing parameters are set (if you have an init_processing_params already)
         if not hasattr(self, 'block_frame'):
