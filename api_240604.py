@@ -170,6 +170,24 @@ class AudioAPI:
             self.gui_config.samplerate = 40000  # or another default value
         self.zc = self.gui_config.samplerate // 100
         self.block_frame = int(np.round(self.gui_config.block_time * self.gui_config.samplerate / self.zc)) * self.zc
+    def init_processing_buffers(self):
+        # Ensure processing parameters are set (if you have an init_processing_params already)
+        if not hasattr(self, 'block_frame'):
+            self.init_processing_params()  # assuming this sets self.block_frame and self.zc
+        # Initialize the buffers needed by audio_callback:
+        self.input_wav = torch.zeros(self.block_frame, device=self.config.device, dtype=torch.float32)
+        self.input_wav_denoise = self.input_wav.clone()
+        self.input_wav_res = torch.zeros(160 * self.block_frame // self.zc, device=self.config.device, dtype=torch.float32)
+        self.rms_buffer = np.zeros(4 * self.zc, dtype="float32")
+        # Use a simple buffer for SOLA; adjust size as needed:
+        self.sola_buffer = torch.zeros(min(self.block_frame, 4 * self.zc), device=self.config.device, dtype=torch.float32)
+        self.nr_buffer = self.sola_buffer.clone()
+        self.output_buffer = self.input_wav.clone()
+        self.skip_head = 0  # or set to an appropriate value
+        self.return_length = self.block_frame // self.zc
+        # Setup fade windows for processing:
+        self.fade_in_window = torch.sin(0.5 * np.pi * torch.linspace(0, 1, steps=self.sola_buffer.shape[0], device=self.config.device, dtype=torch.float32)) ** 2
+        self.fade_out_window = 1 - self.fade_in_window
 
     def start_vc(self):
         torch.cuda.empty_cache()
@@ -425,6 +443,8 @@ class AudioAPI:
     def process_audio_file(self, input_file: str, output_file: str):
         import soundfile as sf
         self.init_processing_params()
+        self.init_processing_buffers()
+
         audio_data, sr = sf.read(input_file, dtype='float32')
         # Optionally, if sr doesn't match your desired samplerate, you can resample here.
         output_audio = []
