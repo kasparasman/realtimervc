@@ -384,7 +384,9 @@ class AudioAPI:
     def process_audio_file(self, input_file: str, output_file: str):
         import soundfile as sf
         audio_data, sr = sf.read(input_file, dtype='float32')
-        self.gui_config.samplerate = sr  # or self.gui_config.samplerate = 16000 if that's what is expected
+        if sr != self.gui_config.samplerate:
+            audio_data = librosa.resample(audio_data, orig_sr=sr, target_sr=self.gui_config.samplerate)
+
         output_audio = []
         num_samples = len(audio_data)
         start = 0
